@@ -6,7 +6,7 @@ from torchvision import transforms, datasets
 import torchvision.models as models
 from torch.utils.data import DataLoader, Subset, random_split, ConcatDataset
 from torch.optim import lr_scheduler
-
+from os.path import exists
 from sklearn.metrics import accuracy_score, recall_score
 
 import numpy as np
@@ -190,8 +190,9 @@ def threshold_detection(model):
     negative_img_losses = []
     positive_img_losses = []
     criterion = nn.MSELoss()
-
-    for data in tqdm(valid_loader, total=len(valid_loader), leave=False):
+    loop = tqdm(valid_loader, total=len(valid_loader), leave=False)
+    loop.set_description(f"Counting loss")
+    for data in loop:
         image, label, fname = data[0].to(device), data[1], data[2]
         with torch.no_grad():
             out_data = model(image)
@@ -211,8 +212,11 @@ def threshold_detection(model):
     threshold = 0.0
     max_rec = 0.0
     num_steps = int(max(all_loss) / 0.00001)
-    for i in range(0, num_steps):
 
+    loop = tqdm(range(0, num_steps), total=num_steps, leave=False)
+    loop.set_description(f"Threshold fitting")
+    #for i in range(0, num_steps):
+    for i in loop:
         predicted_labels = np.array(all_loss)
         predicted_labels[predicted_labels <= i * 0.00001] = 0
         predicted_labels[predicted_labels > i * 0.00001] = 1
@@ -224,14 +228,15 @@ def threshold_detection(model):
         predicted_labels = np.array(all_loss)
         predicted_labels[predicted_labels <= threshold] = 0
         predicted_labels[predicted_labels > threshold] = 1
-
+    plt.ioff()
     plt.figure(figsize=(12, 6))
-    plt.title(f'Validation Loss Distribution, threshold = {threshold}')
+    plt.title(f'{model._get_name()} Validation Loss Distribution, threshold = {threshold}')
     sns.histplot(negative_img_losses, bins=100, kde=True, color='blue', label='Label1')
     sns.histplot(positive_img_losses, bins=100, kde=True, color='red', label='Label2')
     plt.legend(labels=['Negative', 'Positive'])
     plt.axvline(threshold, 0, 10, color='yellow')
-    plt.show()
+    plt.savefig(f'output_figures/{model._get_name()} Validation loss.png')
+    plt.close()
     print(f'{PERCENT * 100}% Cracked images  accuracy = ', max_acc)
     print(f'{PERCENT * 100}% Cracked images recall = ', max_rec)
 
@@ -298,8 +303,9 @@ def loss_distribution(model, threshold):
 
 
 def plot_auto_update(model_name, losses_train, losses_valid):
-    #clear_output(wait=True)
-    fig = plt.figure(figsize=(15, 6))
+
+    plt.ioff()
+    plt.figure(figsize=(15, 6))
     plt.plot(range(1, 1 + len(losses_train)), losses_train, 'ro-')
     plt.plot(range(1, 1 + len(losses_valid)), losses_valid, 'bo-')
     plt.xlabel('epoch')
@@ -308,10 +314,12 @@ def plot_auto_update(model_name, losses_train, losses_valid):
     plt.legend(['Train', 'Valid'])
     plt.title(f'{model_name} Train/Val Losses')
     plt.grid()
-    plt.show()
+    plt.savefig('output_figures/Validation loss.png')
+    plt.close()
 
 
-def train_loop(model, optim_lr, scheduler_step_size, scheduler_gamma, epoch):  # envelope for training process
+
+def train_loop(model, optim_lr, scheduler_step_size, scheduler_gamma, epoch, safe_model=False):  # envelope for training process
 
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=optim_lr)
@@ -321,7 +329,7 @@ def train_loop(model, optim_lr, scheduler_step_size, scheduler_gamma, epoch):  #
     epoch_loss_valid = []
     for i in range(epoch):
         loop = tqdm(train_loader, total=len(train_loader), leave=False)  # Iterate over data.
-        loop.set_description(f"[{i}/{epoch}]")
+        loop.set_description(f"Training [{i}/{epoch}]")
         running_loss = 0.0
         model.train()
 
@@ -341,16 +349,18 @@ def train_loop(model, optim_lr, scheduler_step_size, scheduler_gamma, epoch):  #
         model.eval()
 
         with torch.no_grad():
-
-            for data in tqdm(valid_loader, total=len(valid_loader), leave=False):
+            loop = tqdm(valid_loader, total=len(valid_loader), leave=False)
+            loop.set_description(f"Validation [{i}/{epoch}]")
+            for data in loop:
                 image = data[0].to(device)
                 output = model(image)
                 loss = criterion(image, output)
                 running_loss += loss.item() * image.size(0)
 
         epoch_loss_valid.append(running_loss / len(valid_loader))
-    plot_auto_update(model._get_name(), epoch_loss_train, epoch_loss_valid)
-
+        plot_auto_update(model._get_name(), epoch_loss_train, epoch_loss_valid)
+    if safe_model:
+        torch.save(model.state_dict(), 'saved_nn/'+model._get_name())
     return model
 
 
@@ -405,28 +415,50 @@ def restored_img_mask_plot(images_number, max_loss_flat, max_loss_cnn, model_1, 
 
 
 if __name__ == '__main__':
-    'Concrete Crack Images for Classification/'
+    PATH = "Concrete Crack Images for Classification/"
     BATCH_SIZE: int = 16
     PERCENT = 0.0
-    num_epochs = 3
+    num_epochs = 150
     learning_rate = 0.0001
     scheduler_step_size = 10
     scheduler_gamma = 0.5
+
+    try_to_load_pretrain = False
+    nn_name_cnn = "Autoencoedr_cnn_0605.pt"
+    nn_name_flatten = "Autoencoedr_flatten_0605.pt"
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     device_cpu = torch.device("cpu")
-
     train_loader, valid_loader, test_loader = data_load_preprocess(
-                                                                  path='Train/', batch_size=BATCH_SIZE,
+                                                                  path=PATH, batch_size=BATCH_SIZE,
                                                                   percent=PERCENT, plot_flag=False
                                                                   )
 
-    AutoencoderTrainCnn = AutoencoderCnn().to(device)
-    summary(AutoencoderTrainCnn, (3, 64, 64), BATCH_SIZE)
+    if try_to_load_pretrain and exists("saved_nn/" + nn_name_cnn):
+        AutoencoderTrainCnn = AutoencoderCnn()
+        AutoencoderTrainCnn.load_state_dict(torch.load("saved_nn/" + nn_name_cnn))
+        AutoencoderTrainCnn.to(device).eval()
+    else:
+        AutoencoderTrainCnn = AutoencoderCnn().to(device)
+        AutoencoderTrainCnn = train_loop(AutoencoderTrainCnn, learning_rate, scheduler_step_size,
+                                         scheduler_gamma,
+                                         num_epochs,
+                                         safe_model=True
+                                         )
 
-    AutoencoderTrainFlatten = AutoencoderFlatten().to(device)
-    summary(AutoencoderTrainFlatten, (3, 64, 64), BATCH_SIZE)
+    if try_to_load_pretrain and exists("saved_nn/" + nn_name_flatten):
+        AutoencoderTrainFlatten = AutoencoderFlatten()
+        AutoencoderTrainFlatten.load_state_dict(torch.load("saved_nn/" + nn_name_flatten))
+        AutoencoderTrainFlatten.to(device).eval()
 
-    AutoencoderTrainFlatten = train_loop(AutoencoderTrainFlatten, learning_rate, scheduler_step_size, scheduler_gamma,
-                                         num_epochs)
-    threshold = threshold_detection(AutoencoderTrainFlatten)
-    print('end')
+    else:
+        AutoencoderTrainFlatten = AutoencoderFlatten().to(device)
+        AutoencoderTrainFlatten = train_loop(AutoencoderTrainFlatten, learning_rate, scheduler_step_size,
+                                             scheduler_gamma,
+                                             num_epochs,
+                                             safe_model=True
+                                             )
+
+    threshold_cnn= threshold_detection(AutoencoderTrainCnn)
+    threshold_flatten = threshold_detection(AutoencoderTrainFlatten)
+    print('end',threshold_flatten, threshold_cnn)
