@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader, Subset, random_split, ConcatDataset
 from torch.optim import lr_scheduler
 from os.path import exists
 from sklearn.metrics import accuracy_score, recall_score
-
+from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -418,6 +418,50 @@ def heat_map(images_number, max_loss_flat, max_loss_cnn, model_1, model_2):
         plt.close()
 
 
+def wrong_predicted_img(miss_classified, max_loss, model):
+
+    transform = transforms.Compose([
+                                        transforms.Resize(64),
+                                        transforms.ToTensor()
+                                        ])
+
+    for i, img_path in enumerate(miss_classified):
+        image = Image.open(img_path)
+        img = transform(image)
+        img = np.expand_dims(img, axis=0)
+        img = torch.Tensor(img)
+        loss_func = nn.MSELoss()
+        heat_map_loss = nn.MSELoss(reduction='none')
+        model.eval()
+        img_cuda = img.cuda()
+        with torch.no_grad():
+            out_data = model(img_cuda)
+            avg_loss = loss_func(out_data, img_cuda).item()
+            pixels_loss = heat_map_loss(out_data, img_cuda)
+
+        img = img.numpy()
+
+        out_cpu = out_data.cpu().numpy().transpose((0, 2, 3, 1))
+        pixels_loss = pixels_loss[0].cpu().numpy().transpose((1, 2, 0))
+
+
+
+        img  = img[0]*1.0/img.max()
+        plt.ioff()
+        fig, axs = plt.subplots(1,3, figsize=(15,6))
+        axs[0].imshow(img.transpose((1,2,0)), cmap='gray')
+        axs[0].set_title('original')
+
+        axs[1].imshow(out_cpu[0], cmap='gray')
+        axs[1].set_title(f'restored ')
+
+        plot_heat_1 = axs[2].imshow(pixels_loss[:, :, 0], cmap='seismic',  vmin=0, vmax=max_loss)
+        axs[2].set_title(f'H_map  {avg_loss}')
+        fig.colorbar(plot_heat_1, ax=axs[2], fraction=0.046, pad=0.04)
+        plt.suptitle("Examples of misclassified images", fontsize=20)
+        plt.savefig(f'wrong_predicted_img/{model._get_name()}_{i}_heatmap.png')
+        plt.close()
+
 
 if __name__ == '__main__':
     #PATH = "Concrete Crack Images for Classification/"
@@ -474,4 +518,6 @@ if __name__ == '__main__':
     miss_classified_flat, max_pix_loss_flat = loss_distribution(AutoencoderTrainFlatten, threshold_flatten)
     heat_map(16, max_pix_loss_cnn, max_pix_loss_flat, AutoencoderTrainCnn, AutoencoderTrainFlatten)
 
+    wrong_predicted_img(miss_classified_cnn[:8], max_pix_loss_cnn,  AutoencoderTrainCnn)
+    wrong_predicted_img(miss_classified_flat[:8], max_pix_loss_flat, AutoencoderTrainFlatten)
     print('end')
