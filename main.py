@@ -230,15 +230,15 @@ def threshold_detection(model):
         predicted_labels[predicted_labels > threshold] = 1
     plt.ioff()
     plt.figure(figsize=(12, 6))
-    plt.title(f'{model._get_name()} Validation Loss Distribution, threshold = {threshold}')
+    plt.title(f'{model._get_name()} Validation Loss Distribution, threshold = {round(threshold,6)}')
     sns.histplot(negative_img_losses, bins=100, kde=True, color='blue', label='Label1')
     sns.histplot(positive_img_losses, bins=100, kde=True, color='red', label='Label2')
     plt.legend(labels=['Negative', 'Positive'])
     plt.axvline(threshold, 0, 10, color='yellow')
     plt.savefig(f'output_figures/{model._get_name()} Validation loss.png')
     plt.close()
-    print(f'{PERCENT * 100}% Cracked images  accuracy = ', max_acc)
-    print(f'{PERCENT * 100}% Cracked images recall = ', max_rec)
+    print(f'{PERCENT * 100}% Cracked images  accuracy = ', max_acc, '\n')
+    print(f'{PERCENT * 100}% Cracked images recall = ', max_rec, '\n')
 
     return threshold
 
@@ -253,7 +253,9 @@ def loss_distribution(model, threshold):
     criterion = nn.MSELoss()
     criterion_non_red = nn.MSELoss(reduction='none')
 
-    for data in tqdm(test_loader, total=len(test_loader), leave=False):
+    loop = tqdm(test_loader, total=len(test_loader), leave=False)  # Iterate over data.
+    loop.set_description(f"Loss Distribution {model._get_name()}")
+    for data in loop:
         image, label, fname = data[0].to(device), data[1], data[2]
         with torch.no_grad():
             out_data = model(image)
@@ -281,15 +283,15 @@ def loss_distribution(model, threshold):
 
     max_acc = accuracy_score(true_labels, predicted_labels)
     max_rec = recall_score(true_labels, predicted_labels)
-
+    plt.ioff()
     plt.figure(figsize=(12, 6))
-    plt.title(f'Loss Distribution, threshold = {threshold}')
+    plt.title(f'{model._get_name()} Loss Distribution | Accuracy = {round(max_acc*100,4)}% | threshold =  {round(threshold,6)}')
     sns.histplot(negative_img_losses, bins=100, kde=True, color='blue', label='Label1')
     sns.histplot(positive_img_losses, bins=100, kde=True, color='red', label='Label2')
     plt.legend(labels=['Negative', 'Positive'])
     plt.axvline(threshold, 0, 10, color='yellow')
-    plt.show()
-
+    plt.savefig(f'output_figures/{model._get_name()} Test Loss Distribution.png')
+    plt.close()
     print(f'{PERCENT * 100}% Cracked images  accuracy = ', max_acc)
     print(f'{PERCENT * 100}% Cracked images recall = ', max_rec)
 
@@ -314,12 +316,11 @@ def plot_auto_update(model_name, losses_train, losses_valid):
     plt.legend(['Train', 'Valid'])
     plt.title(f'{model_name} Train/Val Losses')
     plt.grid()
-    plt.savefig('output_figures/Validation loss.png')
+    plt.savefig(f'output_figures/{model_name} Train Validation loss.png')
     plt.close()
 
 
-
-def train_loop(model, optim_lr, scheduler_step_size, scheduler_gamma, epoch, safe_model=False):  # envelope for training process
+def train_loop(model, optim_lr, scheduler_step_size, scheduler_gamma, epoch, safe_model=False):
 
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=optim_lr)
@@ -360,11 +361,11 @@ def train_loop(model, optim_lr, scheduler_step_size, scheduler_gamma, epoch, saf
         epoch_loss_valid.append(running_loss / len(valid_loader))
         plot_auto_update(model._get_name(), epoch_loss_train, epoch_loss_valid)
     if safe_model:
-        torch.save(model.state_dict(), 'saved_nn/'+model._get_name())
+        torch.save(model.state_dict(), 'saved_nn/'+ model._get_name()+'.pt')
     return model
 
 
-def restored_img_mask_plot(images_number, max_loss_flat, max_loss_cnn, model_1, model_2):
+def heat_map(images_number, max_loss_flat, max_loss_cnn, model_1, model_2):
     img, _, _ = next(iter(test_loader))
     heat_map_loss = nn.MSELoss(reduction='none')
     model_1.eval()
@@ -391,7 +392,7 @@ def restored_img_mask_plot(images_number, max_loss_flat, max_loss_cnn, model_1, 
 
         out_plot1 = out_cpu1[i]
         out_plot2 = out_cpu2[i]
-
+        plt.ioff()
         fig, axs = plt.subplots(1, 5, figsize=(18, 8))
         axs[0].imshow(img[i][0], cmap='gray')
         axs[0].set_title('original')
@@ -402,20 +403,25 @@ def restored_img_mask_plot(images_number, max_loss_flat, max_loss_cnn, model_1, 
         axs[2].imshow(out_plot2[:, :, 0], cmap='gray')
         axs[2].set_title(f'restored {model_2._get_name()} ')
 
-        axs[3].imshow(heat_map_plot1[:, :, 0], cmap='seismic', vmin=0, vmax=max(max_loss_cnn, max_loss_flat))
+        axs[3].imshow(heat_map_plot1[:, :, 0], cmap='seismic',
+                      vmin=0, vmax=max(max_loss_cnn, max_loss_flat))
+
         axs[3].set_title(f'H_map {model_1._get_name()} ')
 
-        plot_heat_4 = axs[4].imshow(heat_map_plot2[:, :, 0], cmap='seismic', vmin=0, vmax=max(max_loss_cnn,
-                                                                                              max_loss_flat)
-                                    )
+        plot_heat_4 = axs[4].imshow(heat_map_plot2[:, :, 0], cmap='seismic',
+                                    vmin=0, vmax=max(max_loss_cnn, max_loss_flat))
+
         axs[4].set_title(f'H_map {model_2._get_name()} ')
         fig.colorbar(plot_heat_4, ax=axs[4], fraction=0.046, pad=0.01)
 
-        plt.show()
+        plt.savefig(f'heat_map/{i}heatmap.png')
+        plt.close()
+
 
 
 if __name__ == '__main__':
-    PATH = "Concrete Crack Images for Classification/"
+    #PATH = "Concrete Crack Images for Classification/"
+    PATH = "Train/"
     BATCH_SIZE: int = 16
     PERCENT = 0.0
     num_epochs = 150
@@ -423,9 +429,9 @@ if __name__ == '__main__':
     scheduler_step_size = 10
     scheduler_gamma = 0.5
 
-    try_to_load_pretrain = False
-    nn_name_cnn = "Autoencoedr_cnn_0605.pt"
-    nn_name_flatten = "Autoencoedr_flatten_0605.pt"
+    try_to_load_pretrain = True
+    nn_name_cnn = "AutoencoderCnn.pt"
+    nn_name_flatten = "AutoencoderFlatten.pt"
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     device_cpu = torch.device("cpu")
@@ -433,6 +439,8 @@ if __name__ == '__main__':
                                                                   path=PATH, batch_size=BATCH_SIZE,
                                                                   percent=PERCENT, plot_flag=False
                                                                   )
+
+
 
     if try_to_load_pretrain and exists("saved_nn/" + nn_name_cnn):
         AutoencoderTrainCnn = AutoencoderCnn()
@@ -459,6 +467,11 @@ if __name__ == '__main__':
                                              safe_model=True
                                              )
 
-    threshold_cnn= threshold_detection(AutoencoderTrainCnn)
+    threshold_cnn = threshold_detection(AutoencoderTrainCnn)
     threshold_flatten = threshold_detection(AutoencoderTrainFlatten)
-    print('end',threshold_flatten, threshold_cnn)
+
+    miss_classified_cnn, max_pix_loss_cnn = loss_distribution(AutoencoderTrainCnn, threshold_cnn)
+    miss_classified_flat, max_pix_loss_flat = loss_distribution(AutoencoderTrainFlatten, threshold_flatten)
+    heat_map(16, max_pix_loss_cnn, max_pix_loss_flat, AutoencoderTrainCnn, AutoencoderTrainFlatten)
+
+    print('end')
