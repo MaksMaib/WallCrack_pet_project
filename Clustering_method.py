@@ -41,8 +41,9 @@ def data_load_preprocess(path, batch_size=16, percent=0.0, plot_flag=False):
 
     transform = torchvision.transforms.Compose([
                                                 transforms.ToTensor(),
-                                                # transforms.Normalize((0.5,),(0.5,))
-    ])
+                                               # transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                 #                    std=[0.229, 0.224, 0.225])
+                                                 ])
 
     dataset = ImageFolderWithPaths(path, transform=transform)  # our custom dataset
     next_clas_thr = int(len(dataset) * 0.5)

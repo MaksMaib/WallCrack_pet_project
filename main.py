@@ -1,4 +1,3 @@
-from torchsummary import summary
 import torch
 import torch.nn as nn
 import torchvision
@@ -12,10 +11,8 @@ from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import matplotlib.image as mp_image
-
 from tqdm import tqdm
-from IPython.display import display, clear_output
+from config import opt
 
 
 class AutoencoderFlatten(nn.Module):
@@ -73,35 +70,35 @@ class AutoencoderCnn(nn.Module):
     def __init__(self):
         super().__init__()
         self.encoder = nn.Sequential(
-                                    nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=4, bias=False),
-                                    nn.BatchNorm2d(64),
-                                    nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=4, bias=False),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(0.2, inplace=True),
 
-                                    nn.Conv2d(64, 64, kernel_size=4, stride=2, padding=1, bias=False),
-                                    nn.BatchNorm2d(64),
-                                    nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(64, 64, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(0.2, inplace=True),
 
-                                    nn.Conv2d(64, 64, kernel_size=4, stride=2, padding=1, bias=False),
-                                    nn.BatchNorm2d(64),
-                                    nn.LeakyReLU(0.2, inplace=True),
-                                    nn.AvgPool2d(2),
-                                     )
+            nn.Conv2d(64, 64, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.AvgPool2d(2),
+        )
         self.decoder = nn.Sequential(
-                                    nn.ConvTranspose2d(64, 64, kernel_size=2, stride=2, padding=0, bias=False),
-                                    nn.BatchNorm2d(64),
-                                    nn.LeakyReLU(0.2, inplace=True),
+            nn.ConvTranspose2d(64, 64, kernel_size=2, stride=2, padding=0, bias=False),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(0.2, inplace=True),
 
-                                    nn.ConvTranspose2d(64, 64, kernel_size=2, stride=2, padding=0, bias=False),
-                                    nn.BatchNorm2d(64),
-                                    nn.LeakyReLU(0.2, inplace=True),
+            nn.ConvTranspose2d(64, 64, kernel_size=2, stride=2, padding=0, bias=False),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(0.2, inplace=True),
 
-                                    nn.ConvTranspose2d(64, 64, kernel_size=2, stride=2, padding=0, bias=False),
-                                    nn.BatchNorm2d(64),
-                                    nn.LeakyReLU(0.2, inplace=True),
+            nn.ConvTranspose2d(64, 64, kernel_size=2, stride=2, padding=0, bias=False),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(0.2, inplace=True),
 
-                                    nn.ConvTranspose2d(64, 3, kernel_size=2, stride=2, padding=0, bias=False),
-                                    nn.Tanh(),
-                                    )
+            nn.ConvTranspose2d(64, 3, kernel_size=2, stride=2, padding=0, bias=False),
+            nn.Tanh(),
+        )
 
     def forward(self, x):
         x = self.encoder(x)
@@ -126,7 +123,6 @@ class ImageFolderWithPaths(datasets.ImageFolder):
 
 
 def data_load_preprocess(path, batch_size=16, percent=0.0, plot_flag=False):
-
     percent_valid = 1.0  # as 0.05 = 5%
 
     transform = torchvision.transforms.Compose([
@@ -166,7 +162,6 @@ def data_load_preprocess(path, batch_size=16, percent=0.0, plot_flag=False):
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
     if plot_flag:
-
         my_imshow(train_loader, title='Train')
         my_imshow(valid_loader, title='Valid')
         my_imshow(test_loader, title='Test')
@@ -215,7 +210,7 @@ def threshold_detection(model):
 
     loop = tqdm(range(0, num_steps), total=num_steps, leave=False)
     loop.set_description(f"Threshold fitting")
-    #for i in range(0, num_steps):
+    # for i in range(0, num_steps):
     for i in loop:
         predicted_labels = np.array(all_loss)
         predicted_labels[predicted_labels <= i * 0.00001] = 0
@@ -230,15 +225,15 @@ def threshold_detection(model):
         predicted_labels[predicted_labels > threshold] = 1
     plt.ioff()
     plt.figure(figsize=(12, 6))
-    plt.title(f'{model._get_name()} Validation Loss Distribution, threshold = {round(threshold,6)}')
+    plt.title(f'{model._get_name()} Validation Loss Distribution, threshold = {round(threshold, 6)}')
     sns.histplot(negative_img_losses, bins=100, kde=True, color='blue', label='Label1')
     sns.histplot(positive_img_losses, bins=100, kde=True, color='red', label='Label2')
     plt.legend(labels=['Negative', 'Positive'])
     plt.axvline(threshold, 0, 10, color='yellow')
     plt.savefig(f'output_figures/{model._get_name()} Validation loss.png')
     plt.close()
-    print(f'{PERCENT * 100}% Cracked images  accuracy = ', max_acc, '\n')
-    print(f'{PERCENT * 100}% Cracked images recall = ', max_rec, '\n')
+    print(f'{opt.PERCENT * 100}% Cracked images  accuracy = ', max_acc, '\n')
+    print(f'{opt.PERCENT * 100}% Cracked images recall = ', max_rec, '\n')
 
     return threshold
 
@@ -285,15 +280,16 @@ def loss_distribution(model, threshold):
     max_rec = recall_score(true_labels, predicted_labels)
     plt.ioff()
     plt.figure(figsize=(12, 6))
-    plt.title(f'{model._get_name()} Loss Distribution | Accuracy = {round(max_acc*100,4)}% | threshold =  {round(threshold,6)}')
+    plt.title(
+        f'{model._get_name()} Loss Distribution | Accuracy = {round(max_acc * 100, 4)}% | threshold =  {round(threshold, 6)}')
     sns.histplot(negative_img_losses, bins=100, kde=True, color='blue', label='Label1')
     sns.histplot(positive_img_losses, bins=100, kde=True, color='red', label='Label2')
     plt.legend(labels=['Negative', 'Positive'])
     plt.axvline(threshold, 0, 10, color='yellow')
     plt.savefig(f'output_figures/{model._get_name()} Test Loss Distribution.png')
     plt.close()
-    print(f'{PERCENT * 100}% Cracked images  accuracy = ', max_acc)
-    print(f'{PERCENT * 100}% Cracked images recall = ', max_rec)
+    print(f'{opt.PERCENT * 100}% Cracked images  accuracy = ', max_acc)
+    print(f'{opt.PERCENT * 100}% Cracked images recall = ', max_rec)
 
     miss_classified = []
 
@@ -305,7 +301,6 @@ def loss_distribution(model, threshold):
 
 
 def plot_auto_update(model_name, losses_train, losses_valid):
-
     plt.ioff()
     plt.figure(figsize=(15, 6))
     plt.plot(range(1, 1 + len(losses_train)), losses_train, 'ro-')
@@ -321,7 +316,6 @@ def plot_auto_update(model_name, losses_train, losses_valid):
 
 
 def train_loop(model, optim_lr, scheduler_step_size, scheduler_gamma, epoch, safe_model=False):
-
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=optim_lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step_size, gamma=scheduler_gamma)
@@ -361,7 +355,7 @@ def train_loop(model, optim_lr, scheduler_step_size, scheduler_gamma, epoch, saf
         epoch_loss_valid.append(running_loss / len(valid_loader))
         plot_auto_update(model._get_name(), epoch_loss_train, epoch_loss_valid)
     if safe_model:
-        torch.save(model.state_dict(), 'saved_nn/'+ model._get_name()+'.pt')
+        torch.save(model.state_dict(), 'saved_nn/' + model._get_name() + '.pt')
     return model
 
 
@@ -419,11 +413,10 @@ def heat_map(images_number, max_loss_flat, max_loss_cnn, model_1, model_2):
 
 
 def wrong_predicted_img(miss_classified, max_loss, model):
-
     transform = transforms.Compose([
-                                        transforms.Resize(64),
-                                        transforms.ToTensor()
-                                        ])
+        transforms.Resize(64),
+        transforms.ToTensor()
+    ])
 
     for i, img_path in enumerate(miss_classified):
         image = Image.open(img_path)
@@ -444,18 +437,16 @@ def wrong_predicted_img(miss_classified, max_loss, model):
         out_cpu = out_data.cpu().numpy().transpose((0, 2, 3, 1))
         pixels_loss = pixels_loss[0].cpu().numpy().transpose((1, 2, 0))
 
-
-
-        img  = img[0]*1.0/img.max()
+        img = img[0] * 1.0 / img.max()
         plt.ioff()
-        fig, axs = plt.subplots(1,3, figsize=(15,6))
-        axs[0].imshow(img.transpose((1,2,0)), cmap='gray')
+        fig, axs = plt.subplots(1, 3, figsize=(15, 6))
+        axs[0].imshow(img.transpose((1, 2, 0)), cmap='gray')
         axs[0].set_title('original')
 
         axs[1].imshow(out_cpu[0], cmap='gray')
         axs[1].set_title(f'restored ')
 
-        plot_heat_1 = axs[2].imshow(pixels_loss[:, :, 0], cmap='seismic',  vmin=0, vmax=max_loss)
+        plot_heat_1 = axs[2].imshow(pixels_loss[:, :, 0], cmap='seismic', vmin=0, vmax=max_loss)
         axs[2].set_title(f'H_map  {avg_loss}')
         fig.colorbar(plot_heat_1, ax=axs[2], fraction=0.046, pad=0.04)
         plt.suptitle("Examples of misclassified images", fontsize=20)
@@ -464,50 +455,39 @@ def wrong_predicted_img(miss_classified, max_loss, model):
 
 
 if __name__ == '__main__':
-    #PATH = "Concrete Crack Images for Classification/"
-    PATH = "Train/"
-    BATCH_SIZE: int = 16
-    PERCENT = 0.0
-    num_epochs = 150
-    learning_rate = 0.0001
-    scheduler_step_size = 10
-    scheduler_gamma = 0.5
-
-    try_to_load_pretrain = True
-    nn_name_cnn = "AutoencoderCnn.pt"
-    nn_name_flatten = "AutoencoderFlatten.pt"
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     device_cpu = torch.device("cpu")
     train_loader, valid_loader, test_loader = data_load_preprocess(
-                                                                  path=PATH, batch_size=BATCH_SIZE,
-                                                                  percent=PERCENT, plot_flag=False
+                                                                   path=opt.PATH, batch_size=opt.BATCH_SIZE,
+                                                                   percent=opt.PERCENT, plot_flag=False
                                                                   )
 
-
-
-    if try_to_load_pretrain and exists("saved_nn/" + nn_name_cnn):
+    if opt.try_to_load_pretrain and exists("saved_nn/" + opt.nn_name_cnn):
         AutoencoderTrainCnn = AutoencoderCnn()
-        AutoencoderTrainCnn.load_state_dict(torch.load("saved_nn/" + nn_name_cnn))
+        AutoencoderTrainCnn.load_state_dict(torch.load("saved_nn/" + opt.nn_name_cnn))
         AutoencoderTrainCnn.to(device).eval()
     else:
+        print('Saved NN not exists. Training...')
         AutoencoderTrainCnn = AutoencoderCnn().to(device)
-        AutoencoderTrainCnn = train_loop(AutoencoderTrainCnn, learning_rate, scheduler_step_size,
-                                         scheduler_gamma,
-                                         num_epochs,
+        AutoencoderTrainCnn = train_loop(
+                                         AutoencoderTrainCnn, opt.learning_rate, opt.scheduler_step_size,
+                                         opt.scheduler_gamma,
+                                         opt.num_epochs,
                                          safe_model=True
                                          )
 
-    if try_to_load_pretrain and exists("saved_nn/" + nn_name_flatten):
+    if opt.try_to_load_pretrain and exists("saved_nn/" + opt.nn_name_flatten):
         AutoencoderTrainFlatten = AutoencoderFlatten()
-        AutoencoderTrainFlatten.load_state_dict(torch.load("saved_nn/" + nn_name_flatten))
+        AutoencoderTrainFlatten.load_state_dict(torch.load("saved_nn/" + opt.nn_name_flatten))
         AutoencoderTrainFlatten.to(device).eval()
 
     else:
+        print('Saved NN not exists. Training...')
         AutoencoderTrainFlatten = AutoencoderFlatten().to(device)
-        AutoencoderTrainFlatten = train_loop(AutoencoderTrainFlatten, learning_rate, scheduler_step_size,
-                                             scheduler_gamma,
-                                             num_epochs,
+        AutoencoderTrainFlatten = train_loop(AutoencoderTrainFlatten, opt.learning_rate, opt.scheduler_step_size,
+                                             opt.scheduler_gamma,
+                                             opt.num_epochs,
                                              safe_model=True
                                              )
 
@@ -518,6 +498,6 @@ if __name__ == '__main__':
     miss_classified_flat, max_pix_loss_flat = loss_distribution(AutoencoderTrainFlatten, threshold_flatten)
     heat_map(16, max_pix_loss_cnn, max_pix_loss_flat, AutoencoderTrainCnn, AutoencoderTrainFlatten)
 
-    wrong_predicted_img(miss_classified_cnn[:8], max_pix_loss_cnn,  AutoencoderTrainCnn)
+    wrong_predicted_img(miss_classified_cnn[:8], max_pix_loss_cnn, AutoencoderTrainCnn)
     wrong_predicted_img(miss_classified_flat[:8], max_pix_loss_flat, AutoencoderTrainFlatten)
     print('end')
