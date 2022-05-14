@@ -1,7 +1,7 @@
 # WallCrack_pet_project
 Сracked walls classification using unsupervised approaches.
 This project combined the approaches of classical clustering methods and unsupervised deep learning.
-[Concrete Crack Images for Classification dataset was used](#CCC). See [this](https://data.mendeley.com/datasets/5y9wdsg2zt/2) 
+[Concrete Crack Images for Classification](#CCC) dataset was used. See [this](https://data.mendeley.com/datasets/5y9wdsg2zt/2) 
 
 
 ## Citations
