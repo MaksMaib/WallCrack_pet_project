@@ -8,7 +8,6 @@ More detailed report on the [link](https://docs.google.com/document/d/1MCauhV5hh
 
 
 ## Setup data
-For MNIST and CIFAR10 dataset: open **config.py**, change the **dataset_name**, **data_path**, **model_name** .
 Before you start, specify the path to the dataset and model:  open **config.py**, change the **PATH**, **model_name** .
 
 ## Train model
