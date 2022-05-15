@@ -14,7 +14,6 @@ class DefaultConfig(object):
     scheduler_gamma = 0.5
     resize_img = 64
     train_val_visual = True
-    try_to_load_pretrain = True
     model_name = 'AutoencoderCnn'
 
     def parse(self, kwargs):

@@ -6,6 +6,9 @@ import torch.nn as nn
 from PIL import Image
 from torchvision import transforms
 import numpy as np
+from sklearn.metrics import accuracy_score, recall_score
+from tqdm import tqdm
+
 
 def test_vis(model, threshold, max_acc, positive_img_losses, negative_img_losses):
     plt.ioff()
@@ -17,18 +20,6 @@ def test_vis(model, threshold, max_acc, positive_img_losses, negative_img_losses
     plt.legend(labels=['Negative', 'Positive'])
     plt.axvline(threshold, 0, 10, color='yellow')
     plt.savefig(f'output_figures/{model._get_name()} Test Loss Distribution.png')
-    plt.close()
-
-
-def distribution_plot(model, threshold, positive_img_losses, negative_img_losses):
-    plt.ioff()
-    plt.figure(figsize=(12, 6))
-    plt.title(f'{model._get_name()} Validation Loss Distribution, threshold = {round(threshold, 6)}')
-    sns.histplot(negative_img_losses, bins=100, kde=True, color='blue', label='Label1')
-    sns.histplot(positive_img_losses, bins=100, kde=True, color='red', label='Label2')
-    plt.legend(labels=['Negative', 'Positive'])
-    plt.axvline(threshold, 0, 10, color='yellow')
-    plt.savefig(f'output_figures/{model._get_name()} Validation loss.png')
     plt.close()
 
 
@@ -45,18 +36,6 @@ def train_val_plot(model_name, losses_train, losses_valid):
     plt.grid()
     plt.savefig(f'outputs/{model_name} Train Validation loss.png')
     plt.close()
-
-
-
-def my_imshow(img_loader, title=None):
-    inputs, _, _ = next(iter(img_loader))
-    inputs = torchvision.utils.make_grid(inputs)
-    inputs = inputs.numpy().transpose((1, 2, 0))
-    plt.figure(figsize=(15, 6))
-    plt.title(title)
-    plt.imshow(inputs)
-    plt.show()
-
 
 
 def heat_map(images_number, max_loss_flat, max_loss_cnn, model_1, model_2, loader):
@@ -153,29 +132,21 @@ def wrong_predicted_img(miss_classified, max_loss, model):
         plt.savefig(f'wrong_predicted_img/{model._get_name()}_{i}_heatmap.png')
         plt.close()
 
-def loss_distribution(model, threshold):
-    max_pix_loss: float = 0.0
-    all_loss = []
+
+def loss_distribution(model, loader, threshold):
     true_labels = []
-    files_name_list = []
     negative_img_losses = []
     positive_img_losses = []
     criterion = nn.MSELoss()
-    criterion_non_red = nn.MSELoss(reduction='none')
 
-    loop = tqdm(test_loader, total=len(test_loader), leave=False)  # Iterate over data.
+    loop = tqdm(loader, total=len(loader), leave=False)  # Iterate over data.
     loop.set_description(f"Loss Distribution {model._get_name()}")
     for data in loop:
-        image, label, fname = data[0].cuda(0), data[1], data[2]
+        image, label = data[0].cuda(0), data[1]
         with torch.no_grad():
             out_data = model(image)
             for i, iter_img in enumerate(image):
                 loss = criterion(iter_img, out_data[i])
-                loss_non_red = criterion_non_red(iter_img, out_data[i])
-
-                if max_pix_loss < loss_non_red.cpu().numpy().max():
-                    max_pix_loss = loss_non_red.cpu().numpy().max()
-
                 true_labels.append(label[i].item())
 
                 if label[i].item() == 0:
@@ -184,21 +155,12 @@ def loss_distribution(model, threshold):
                 if label[i].item() == 1:
                     positive_img_losses.append(loss.item())
 
-                all_loss.append(loss.item())
-                files_name_list.append(fname[i])
-
-    predicted_labels = np.array(all_loss)
-    predicted_labels[predicted_labels <= threshold] = 0
-    predicted_labels[predicted_labels > threshold] = 1
-
-    max_acc = accuracy_score(true_labels, predicted_labels)
-    max_rec = recall_score(true_labels, predicted_labels)
-    print(f'{opt.PERCENT * 100}% Cracked images  accuracy = ', max_acc)
-    print(f'{opt.PERCENT * 100}% Cracked images recall = ', max_rec)
-
-    miss_classified = []
-    wrong_ident = np.where(predicted_labels != true_labels)
-    for i in wrong_ident[0]:
-        miss_classified.append(files_name_list[i])
-
-    return miss_classified, max_pix_loss
+    plt.ioff()
+    plt.figure(figsize=(12, 6))
+    plt.title(f'{model._get_name()} Loss Distribution | threshold =  {round(threshold, 6)}')
+    sns.histplot(negative_img_losses, bins=250, kde=True, color='blue', label='Label1')
+    sns.histplot(positive_img_losses, bins=250, kde=True, color='red', label='Label2')
+    plt.axvline(threshold, 0, 10, color='yellow', label='Label3')
+    plt.legend(labels=['Negative', 'Positive', 'threshold'])
+    plt.savefig(f'outputs/{model._get_name()} loss distribution.png')
+    plt.close()

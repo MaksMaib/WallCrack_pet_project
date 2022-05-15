@@ -5,12 +5,33 @@ from torch.utils.data import DataLoader
 from os.path import exists
 from sklearn.metrics import accuracy_score, recall_score
 import numpy as np
-
 from tqdm import tqdm
+
 from config import opt
 from models import get_model
 from loader import crack_wall_loader
 import visualization
+
+
+def loss_distrib(**kwargs):
+    opt.parse(kwargs)
+    model = get_model(opt.model_name)
+    if exists("saved_nn/" + model._get_name() + '.pt'):
+        model.load_state_dict(torch.load("saved_nn/" + model._get_name() + '.pt'))
+        model.cuda(0).eval()
+    else:
+        raise 'Trained model not found'
+
+    with open(f"saved_nn/threshold for {model._get_name()}.txt") as f:
+        threshold = float(f.read())
+
+    _, _, test_dataset = crack_wall_loader.data_load_preprocess(
+                        path=opt.PATH, percent=opt.PERCENT, resize_img=opt.resize_img
+                                                                )
+
+    test_loader = DataLoader(test_dataset, batch_size=opt.BATCH_SIZE, shuffle=False)
+
+    visualization.loss_distribution(model, test_loader, threshold)
 
 
 def _threshold_detection(model, loader):
@@ -147,7 +168,6 @@ def test(**kwargs):
     predicted_labels[predicted_labels > threshold] = 1
 
     max_acc = accuracy_score(true_labels, predicted_labels)
-    max_rec = recall_score(true_labels, predicted_labels)
     print(f'{model._get_name()} accuracy = ', max_acc)
 
 
