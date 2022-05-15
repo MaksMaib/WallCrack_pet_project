@@ -1,5 +1,5 @@
 # WallCrack_pet_project
-Ñracked walls classification using unsupervised approaches.
+Cracked walls classification using unsupervised approaches.
 This project combined the approaches of classical clustering methods and unsupervised deep learning.
 [Concrete Crack Images for Classification](#CCC) dataset was used. See [this](https://data.mendeley.com/datasets/5y9wdsg2zt/2)
 
@@ -16,12 +16,12 @@ If you want to keep track of training and validation losses: open **config.py**,
 Figure will be saved and update automatically in **outputs** with name format "**model_name Train Validation loss.png**"
 To plot hitmaps use:
 ```bash
- **python inference.py heatmap_plot N** 
+python inference.py heatmap_plot N
 ```
 where N - images number. Figures will be stored in **outputs/heat_map/**
 To display the loss distribution use:
 ```bash
- **python inference.py loss_distrib**
+python inference.py loss_distrib
 ```
 ## Train model
 ```bash
