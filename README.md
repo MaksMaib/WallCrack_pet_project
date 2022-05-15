@@ -10,6 +10,11 @@ More detailed report on the [link](https://docs.google.com/document/d/1MCauhV5hh
 ## Setup data
 Before you start, specify the path to the dataset and model:  open **config.py**, change the **PATH** and **model_name** .
 
+
+## Visualization
+If you want to keep track of training and validation losses: open **config.py**, make **train_val_visual = True**
+Figure will be saved and update automatically in **outputs** with name format **model_name Train Validation loss.png**
+
 ## Train model
 ```bash
 python main.py train
