@@ -5,6 +5,23 @@ This project combined the approaches of classical clustering methods and unsuper
 
 More detailed report on the [link](https://docs.google.com/document/d/1MCauhV5hhBF0vu1yclQCtKX03kNLUnXgQDsQNn8lhKM/edit?usp=sharing)
 
+
+
+## Setup data
+For MNIST and CIFAR10 dataset: open **config.py**, change the **dataset_name**, **data_path**, **model_name** .
+Before you start, specify the path to the dataset and model:  open **config.py**, change the **PATH**, **model_name** .
+
+## Train model
+```bash
+python main.py train
+```
+
+## Test
+```bash
+python main.py test
+```
+
+
 ## Citations
 <a id = 'CCC'>
 [1] Özgenel, Çağlar Fırat (2019), “Concrete Crack Images for Classification”, Mendeley Data, V2, doi: 10.17632/5y9wdsg2zt.2
