@@ -14,7 +14,7 @@ Before you start, specify the path to the dataset and model:  open **config.py**
 ## Visualization
 If you want to keep track of training and validation losses: open **config.py**, make **train_val_visual = True** <br/>
 Figure will be saved and update automatically in **outputs** with name format "**model_name Train Validation loss.png**"<br/>
-To plot hitmaps use:<br/>
+To plot heatmaps use:<br/>
 ```bash
 python inference.py heatmap_plot N
 ```
