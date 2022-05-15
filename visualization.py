@@ -43,7 +43,7 @@ def train_val_plot(model_name, losses_train, losses_valid):
     plt.legend(['Train', 'Valid'])
     plt.title(f'{model_name} Train/Val Losses')
     plt.grid()
-    plt.savefig(f'output_figures/{model_name} Train Validation loss.png')
+    plt.savefig(f'outputs/{model_name} Train Validation loss.png')
     plt.close()
 
 
