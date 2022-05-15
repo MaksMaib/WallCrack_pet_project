@@ -1,5 +1,5 @@
 # WallCrack_pet_project
-Сracked walls classification using unsupervised approaches.
+�racked walls classification using unsupervised approaches.
 This project combined the approaches of classical clustering methods and unsupervised deep learning.
 [Concrete Crack Images for Classification](#CCC) dataset was used. See [this](https://data.mendeley.com/datasets/5y9wdsg2zt/2)
 
@@ -13,8 +13,9 @@ Before you start, specify the path to the dataset and model:  open **config.py**
 
 ## Visualization
 If you want to keep track of training and validation losses: open **config.py**, make **train_val_visual = True**
-Figure will be saved and update automatically in **outputs** with name format **model_name Train Validation loss.png**
-
+Figure will be saved and update automatically in **outputs** with name format "**model_name Train Validation loss.png**"
+To plot hitmaps use **python inference.py heatmap_plot N** where N - images number. Figures will be stored in **outputs/heat_map/**
+To display the loss distribution use **python inference.py loss_distrib**
 ## Train model
 ```bash
 python main.py train
@@ -22,11 +23,11 @@ python main.py train
 
 ## Test
 ```bash
-python main.py test
+python inference.py test
 ```
 
 
 ## Citations
 <a id = 'CCC'>
-[1] Özgenel, Çağlar Fırat (2019), “Concrete Crack Images for Classification”, Mendeley Data, V2, doi: 10.17632/5y9wdsg2zt.2
+[1] ?zgenel, ?a?lar F?rat (2019), �Concrete Crack Images for Classification�, Mendeley Data, V2, doi: 10.17632/5y9wdsg2zt.2
 <br>
