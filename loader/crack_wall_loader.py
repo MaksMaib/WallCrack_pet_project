@@ -4,8 +4,6 @@ import numpy as np
 from torch.utils.data import DataLoader, Subset
 
 
-
-
 class ImageFolderWithPaths(datasets.ImageFolder):
     """Custom dataset that includes image file paths. Extends
     torchvision.datasets.ImageFolder
