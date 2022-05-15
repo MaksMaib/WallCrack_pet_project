@@ -10,7 +10,7 @@ from sklearn.cluster import MiniBatchKMeans, Birch
 
 from sklearn import decomposition
 from sklearn.decomposition import IncrementalPCA
-
+from config import opt
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -41,8 +41,9 @@ def data_load_preprocess(path, batch_size=16, percent=0.0, plot_flag=False):
 
     transform = torchvision.transforms.Compose([
                                                 transforms.ToTensor(),
-                                                # transforms.Normalize((0.5,),(0.5,))
-    ])
+                                               # transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                 #                    std=[0.229, 0.224, 0.225])
+                                                 ])
 
     dataset = ImageFolderWithPaths(path, transform=transform)  # our custom dataset
     next_clas_thr = int(len(dataset) * 0.5)
@@ -59,8 +60,8 @@ def data_load_preprocess(path, batch_size=16, percent=0.0, plot_flag=False):
     print(f'train dataset len negative/positive = {len(train_dataset)}')
     print(f'test dataset len negative/positive = {len(test_dataset)}')
 
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=opt.BATCH_SIZE, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=opt.BATCH_SIZE, shuffle=False)
 
 
 
@@ -106,7 +107,7 @@ def prediction_plot(model, features_2d, labels_ground_truth, labels_predicted):
 
 
 def pca_fit_transform():
-    ipca_2D = IncrementalPCA(n_components=2, batch_size=BATCH_SIZE)
+    ipca_2D = IncrementalPCA(n_components=2, batch_size=opt.BATCH_SIZE)
 
     features_2D = []
     labels_ground_truth = []
@@ -150,7 +151,7 @@ def invert(labels):
 
 
 def kmeans_fit_predict(labels_ground_truth, features_2d):
-    kmeans = MiniBatchKMeans(n_clusters=2, batch_size=BATCH_SIZE)
+    kmeans = MiniBatchKMeans(n_clusters=2, batch_size=opt.BATCH_SIZE)
     labels_predicted = []
     loop = tqdm(train_loader, total=len(train_loader), leave=True)
     loop.set_description(f"K-Means fitting")
@@ -200,9 +201,7 @@ def birch_fit_predict(labels_ground_truth,features_2d):
 
 if __name__ == '__main__':
     #PATH = "Concrete Crack Images for Classification/"
-    PATH = "Train/"
-    BATCH_SIZE: int = 16
-    PERCENT = 1.0
+
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -213,8 +212,8 @@ if __name__ == '__main__':
     resnet.eval()
 
     train_loader, test_loader = data_load_preprocess(
-                                                        path=PATH, batch_size=BATCH_SIZE,
-                                                        percent=PERCENT, plot_flag=False
+                                                        path=opt.PATH, batch_size=opt.BATCH_SIZE,
+                                                        percent=opt.PERCENT, plot_flag=False
                                                     )
 
     labels_ground_truth, features_2d = pca_fit_transform()
