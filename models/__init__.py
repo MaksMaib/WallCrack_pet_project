@@ -1,5 +1,5 @@
-from AutoencoderCnn import AutoencoderCnn
-from AutoencoderFlatten import AutoencoderFlatten
+from models.AutoencoderCnn import AutoencoderCnn
+from models.AutoencoderFlatten import AutoencoderFlatten
 
 
 def get_model(name):
