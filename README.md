@@ -36,5 +36,5 @@ python inference.py test
 
 ## Citations
 <a id = 'CCC'>
-[1] ?zgenel, ?a?lar F?rat (2019), “Concrete Crack Images for Classification”, Mendeley Data, V2, doi: 10.17632/5y9wdsg2zt.2
+[1] 2018 – ?zgenel, ?.F., G?nen? Sorgu?, A. “Performance Comparison of Pretrained Convolutional Neural Networks on Crack Detection in Buildings”, ISARC 2018, Berlin.
 <br>
