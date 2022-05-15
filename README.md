@@ -18,7 +18,7 @@ To plot hitmaps use:<br/>
 ```bash
 python inference.py heatmap_plot N
 ```
-where N - images number. Figures will be stored in<br/> **outputs/heat_map/**<br/>
+where N - images number. Figures will be stored in **outputs/heat_map/**<br/>
 To display the loss distribution use:<br/>
 ```bash
 python inference.py loss_distrib
